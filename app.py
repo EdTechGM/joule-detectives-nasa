@@ -37,8 +37,12 @@ if "place_name" not in st.session_state:
 
 # --- SIDEBAR CONTROL PANEL ---
 st.sidebar.markdown("### 🛰️ MISSION CONTROL PANEL")
-st.sidebar.info(
-    "**Dynamic Web Guide:** Change the location below or click anywhere on the map to recalculate NASA satellite records, 2030 projections, and charts in real time."
+st.sidebar.markdown(
+    '<div style="background-color:#1E293B; border:1px solid #38BDF8; border-left:4px solid #FACC15; '
+    'padding:10px 12px; border-radius:6px; color:#F8FAFC; font-size:13px; margin-bottom:12px;">'
+    "<b>Dynamic Web Guide:</b> Change the location below or click anywhere on the map to recalculate NASA satellite records, 2030 projections, and charts in real time."
+    "</div>",
+    unsafe_allow_html=True,
 )
 
 city_input = st.sidebar.text_input(
@@ -64,11 +68,11 @@ if st.sidebar.button("🔍 Update Location"):
 col_c1, col_c2 = st.sidebar.columns(2)
 with col_c1:
     manual_lat = st.number_input(
-        "Latitude:", value=float(st.session_state.lat), format="%.4f"
+        "Latitude (°):", value=float(st.session_state.lat), format="%.4f"
     )
 with col_c2:
     manual_lon = st.number_input(
-        "Longitude:", value=float(st.session_state.lon), format="%.4f"
+        "Longitude (°):", value=float(st.session_state.lon), format="%.4f"
     )
 
 if manual_lat != st.session_state.lat or manual_lon != st.session_state.lon:
@@ -81,54 +85,78 @@ offline_mode = st.sidebar.toggle(
     "🔌 Offline Contingency Mode (ON / OFF)", value=False
 )
 
-# --- DYNAMIC THEME COLORS ---
 if offline_mode:
-    bg_app = "#FEF3C7"
-    bg_card = "#FFFBEB"
-    border_nav = "#D97706"
     offline_banner_html = (
         '<div style="background-color:#B91C1C; color:#FFFFFF; padding:10px 18px; border-radius:4px; '
-        'font-weight:800; text-align:center; margin-bottom:12px; letter-spacing:0.6px; font-size:14px;">'
+        'font-weight:800; text-align:center; margin-bottom:12px; letter-spacing:0.6px; font-size:14px; border:1px solid #FCA5A5;">'
         "⚠️ OFFLINE MODE ACTIVE — OPERATING WITH LOCAL CACHE FOR POWER & GRID CONTINGENCY"
         "</div>"
     )
+    border_nav = "#FACC15"
 else:
-    bg_app = "#FFFFFF"
-    bg_card = "#FEF9C3"
-    border_nav = "#FC3D21"
     offline_banner_html = ""
+    border_nav = "#FC3D21"
 
-# --- NASA.GOV AEROSPACE CSS ---
+# --- PERMANENT DARK AEROSPACE THEME (LOCKED HIGH-CONTRAST) ---
 st.markdown(
     f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Orbitron:wght@700;900&family=Space+Mono:wght@400;700&display=swap');
 
-    .stApp {{
-        background-color: {bg_app};
-        color: #0F172A !important;
+    /* Lock global dark background regardless of browser/Streamlit theme */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
+        background-color: #0B0E14 !important;
+        color: #F8FAFC !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }}
-    .stApp h1, .stApp h2, .stApp h3, .stApp h4 {{
-        color: #0B3D91 !important;
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, [data-testid="stHeading"] * {{
+        color: #38BDF8 !important;
         font-weight: 800 !important;
     }}
-    .stApp p, .stApp li, .stApp label, [data-testid="stCaptionContainer"] {{
-        color: #1E293B !important;
+    .stApp p, .stApp li, .stApp label, .stApp span, [data-testid="stCaptionContainer"] * {{
+        color: #E2E8F0 !important;
     }}
-    .nasa-topbar *, .nasa-subbar *, .nasa-hero-banner *, section[data-testid="stSidebar"] * {{
+
+    /* Sidebar dark styling & high-contrast fields */
+    section[data-testid="stSidebar"] {{
+        background-color: #111827 !important;
+        border-right: 2px solid #1E3A8A !important;
+    }}
+    section[data-testid="stSidebar"] * {{
+        color: #F8FAFC !important;
+    }}
+    section[data-testid="stSidebar"] input[type="text"],
+    section[data-testid="stSidebar"] input[type="number"] {{
+        background-color: #1F2937 !important;
+        color: #FACC15 !important;
+        border: 1px solid #38BDF8 !important;
+        font-weight: 700 !important;
+        -webkit-text-fill-color: #FACC15 !important;
+    }}
+    /* +/- buttons inside number inputs */
+    section[data-testid="stSidebar"] button[kind="secondary"],
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepDown"],
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepUp"] {{
+        background-color: #1E293B !important;
         color: #FFFFFF !important;
+        border: 1px solid #38BDF8 !important;
     }}
-    section[data-testid="stSidebar"] input {{
-        color: #0F172A !important;
-        background-color: #FFFFFF !important;
+
+    /* Copyable coordinate code blocks */
+    [data-testid="stCode"], pre, code {{
+        background-color: #1E293B !important;
+        color: #FACC15 !important;
+        border: 1px solid #38BDF8 !important;
+        font-weight: 700 !important;
     }}
-    section[data-testid="stSidebar"] [data-testid="stAlert"] * {{
-        color: #0F172A !important;
+    [data-testid="stCode"] * {{
+        color: #FACC15 !important;
     }}
+
+    /* Top NASA Header */
     .nasa-topbar {{
         background-color: #000000;
-        color: #FFFFFF;
+        color: #FFFFFF !important;
         padding: 14px 24px;
         border-radius: 6px 6px 0 0;
         display: flex;
@@ -187,12 +215,13 @@ st.markdown(
         color: #FFFFFF !important;
         padding: 20px 26px;
         border-radius: 0 0 6px 6px;
-        margin-bottom: 16px;
-        box-shadow: 0 6px 18px rgba(11, 61, 145, 0.22);
+        margin-bottom: 18px;
+        border: 1px solid #1E40AF;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
     }}
     .nasa-hero-banner h1 {{
         color: #FFFFFF !important;
-        font-size: 26px !important;
+        font-size: 25px !important;
         font-weight: 900 !important;
         margin: 0 0 8px 0 !important;
     }}
@@ -201,71 +230,87 @@ st.markdown(
         font-size: 15px !important;
         margin: 0 !important;
     }}
+
+    /* Dynamic location pill */
     .dynamic-pill {{
-        background-color: #FEF3C7;
-        color: #92400E !important;
-        border: 2px solid #F59E0B;
+        background-color: #1E293B;
+        color: #FACC15 !important;
+        border: 2px solid #38BDF8;
         font-weight: 900;
-        padding: 2px 10px;
-        border-radius: 5px;
+        padding: 2px 12px;
+        border-radius: 6px;
         font-family: 'Space Mono', monospace;
         display: inline-block;
     }}
+
+    /* Dark KPI Cards */
     .nasa-card {{
-        background-color: {bg_card};
-        border: 1px solid #CBD5E1;
-        border-top: 6px solid #0B3D91;
+        background-color: #161B22;
+        border: 1px solid #334155;
+        border-top: 6px solid #38BDF8;
         padding: 16px;
-        border-radius: 6px;
+        border-radius: 8px;
         margin-bottom: 14px;
-        color: #111827 !important;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+        color: #F8FAFC !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     }}
-    .border-solar {{ border-top-color: #EA580C !important; }}
-    .border-wind {{ border-top-color: #0284C7 !important; }}
-    .border-temp {{ border-top-color: #DC2626 !important; }}
-    .border-rain {{ border-top-color: #2563EB !important; }}
+    .border-solar {{ border-top-color: #F97316 !important; }}
+    .border-wind {{ border-top-color: #38BDF8 !important; }}
+    .border-temp {{ border-top-color: #EF4444 !important; }}
+    .border-rain {{ border-top-color: #60A5FA !important; }}
     .nasa-kicker {{
         font-family: 'Space Mono', monospace;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.8px;
-        color: #374151 !important;
+        color: #94A3B8 !important;
         font-weight: 700;
     }}
     .nasa-metric {{
         font-size: 24px;
         font-weight: 900;
-        color: #0B3D91 !important;
-        background-color: #FFFFFF;
+        color: #FACC15 !important;
+        background-color: #0F172A;
         display: inline-block;
-        padding: 3px 10px;
+        padding: 4px 12px;
         border-radius: 4px;
-        margin: 6px 0;
-        border-left: 4px solid #105BD8;
+        margin: 8px 0;
+        border-left: 4px solid #38BDF8;
+        font-family: 'Space Mono', monospace;
     }}
+    .nasa-card p {{
+        color: #CBD5E1 !important;
+    }}
+    .nasa-card b {{
+        color: #FFFFFF !important;
+    }}
+
+    /* Significance badges */
     .sig-pill {{
         display: inline-block;
         font-family: 'Space Mono', monospace;
         font-size: 11px;
         font-weight: 700;
         padding: 3px 8px;
-        border-radius: 3px;
+        border-radius: 4px;
     }}
-    .sig-yes {{ background-color: #15803D; color: #FFFFFF !important; }}
-    .sig-no {{ background-color: #374151; color: #FFFFFF !important; }}
+    .sig-yes {{ background-color: #065F46; color: #A7F3D0 !important; border: 1px solid #10B981; }}
+    .sig-no {{ background-color: #1E293B; color: #CBD5E1 !important; border: 1px solid #64748B; }}
+
+    /* Action buttons */
     .stButton > button, .stDownloadButton > button {{
         width: 100% !important;
         background-color: #0B3D91 !important;
         color: #FFFFFF !important;
         font-weight: 800 !important;
-        border: 2px solid #60A5FA !important;
-        border-radius: 4px !important;
+        border: 2px solid #38BDF8 !important;
+        border-radius: 6px !important;
         text-transform: uppercase;
     }}
     .stButton > button:hover, .stDownloadButton > button:hover {{
         background-color: #FC3D21 !important;
         border-color: #FFFFFF !important;
+        color: #FFFFFF !important;
     }}
 </style>
 """,
@@ -353,9 +398,9 @@ st.sidebar.download_button(
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(
-    '<div style="background-color:#F8FAFC; border:1px solid #CBD5E1; border-left:4px solid #FC3D21; padding:12px; border-radius:4px; color:#0F172A !important; font-size:12px;">'
-    '<div style="font-weight:800; color:#0B3D91 !important; margin-bottom:4px;">🔓 100% OPEN SOURCE SOFTWARE</div>'
-    '<span style="color:#1E293B !important;">Replicable Python + NASA POWER tool designed for researchers, communities, and off-grid resilience.</span>'
+    '<div style="background-color:#1E293B; border:1px solid #38BDF8; border-left:4px solid #FC3D21; padding:12px; border-radius:6px; color:#F8FAFC; font-size:12px;">'
+    '<div style="font-weight:800; color:#38BDF8; margin-bottom:4px;">🔓 100% OPEN SOURCE SOFTWARE</div>'
+    '<span style="color:#E2E8F0;">Replicable Python + NASA POWER tool designed for researchers, communities, and off-grid resilience.</span>'
     "</div>",
     unsafe_allow_html=True,
 )
@@ -519,13 +564,15 @@ fig_2d.add_trace(
         x=years_ext,
         y=int_t + slope_t * years_ext,
         name="Temperature Projection to 2030 (°C)",
-        line=dict(color="#B91C1C", width=2, dash="dot"),
+        line=dict(color="#FACC15", width=2, dash="dot"),
     ),
     secondary_y=False,
 )
 
 fig_2d.update_layout(
-    template="plotly_white",
+    template="plotly_dark",
+    paper_bgcolor="#0B0E14",
+    plot_bgcolor="#111827",
     height=380,
     margin=dict(l=20, r=20, t=30, b=20),
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
@@ -584,9 +631,9 @@ fig_3d.update_layout(
     margin=dict(l=0, r=0, b=0, t=30),
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
     scene=dict(
-        xaxis=dict(title="Year (2015–2030)", backgroundcolor="#0B0E14"),
-        yaxis=dict(title="Renewable Resource", backgroundcolor="#0B0E14"),
-        zaxis=dict(title="Resource Intensity", backgroundcolor="#0B0E14"),
+        xaxis=dict(title="Year (2015–2030)", backgroundcolor="#111827"),
+        yaxis=dict(title="Renewable Resource", backgroundcolor="#111827"),
+        zaxis=dict(title="Resource Intensity", backgroundcolor="#111827"),
     ),
 )
 
