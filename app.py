@@ -9,7 +9,6 @@ from scipy import stats
 import streamlit as st
 from streamlit_folium import st_folium
 
-# Icono vectorial SVG con estética orbital NASA (< 1 KB)
 ICONO_NASA_SVG_URI = (
     "data:image/svg+xml;utf8,"
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
@@ -27,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
-# --- CSS TEMA OSCURO ESPACIAL + DISCRIMINACIÓN MÓVIL VS PORTÁTIL ---
+# --- CSS TEMA OSCURO + BUSCADOR SIEMPRE VISIBLE + OPTIMIZACIÓN MÓVIL ---
 st.markdown(
     """
 <style>
@@ -45,15 +44,6 @@ st.markdown(
     .stApp p, .stApp label, .stApp span {
         color: #F8FAFC !important;
     }
-    /* Asegura que el botón de abrir/cerrar menú lateral sea siempre visible */
-    button[kind="header"],
-    [data-testid="collapsedControl"] {
-        background-color: #0B3D91 !important;
-        color: #FFFFFF !important;
-        border: 2px solid #38BDF8 !important;
-        border-radius: 6px !important;
-        z-index: 999999 !important;
-    }
     section[data-testid="stSidebar"] {
         background-color: #111827 !important;
         border-right: 2px solid #1E3A8A !important;
@@ -64,8 +54,9 @@ st.markdown(
     input[type="text"], input[type="number"] {
         background-color: #1F2937 !important;
         color: #FACC15 !important;
-        border: 1px solid #38BDF8 !important;
+        border: 2px solid #38BDF8 !important;
         font-weight: 700 !important;
+        font-size: 16px !important;
     }
     .stDownloadButton > button {
         width: 100% !important;
@@ -77,20 +68,13 @@ st.markdown(
     .stDownloadButton > button p {
         color: #FFFFFF !important;
     }
-    /* Estilo del desplegable rápido para móviles */
-    div[data-testid="stExpander"] {
-        background-color: #111827 !important;
-        border: 2px solid #38BDF8 !important;
-        border-radius: 8px !important;
-        margin-bottom: 14px !important;
-    }
-    /* En portátil (>768px) oculta el desplegable rápido para mantener el diseño original limpio */
-    @media (min-width: 769px) {
-        div[data-testid="stExpander"] {
+    /* En móviles (<768px) oculta el sidebar lateral para evitar bloqueos de pantalla */
+    @media (max-width: 768px) {
+        section[data-testid="stSidebar"],
+        [data-testid="collapsedControl"] {
             display: none !important;
         }
     }
-    /* Encabezado estilo agencia espacial con tipografía Orbitron */
     .nasa-topbar {
         background-color: #000000;
         padding: 14px 20px;
@@ -125,7 +109,7 @@ st.markdown(
         padding: 14px 18px;
         border-radius: 0 0 6px 6px;
         color: #E2E8F0 !important;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
     .dinamico-card {
         background-color: #161B22;
@@ -147,7 +131,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- EMBLEMA VECTORIAL ESTILO NASA ---
 LOGO_NASA_SVG = (
     '<svg width="48" height="48" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
     '<circle cx="50" cy="50" r="46" fill="#0B3D91" stroke="#FFFFFF" stroke-width="3"/>'
@@ -180,7 +163,7 @@ def geocodificar(nombre, offline):
     return 37.3890, -5.9840, "Sevilla, España"
 
 
-# --- ESTADO INICIAL DE COORDENADAS ---
+# --- ESTADO INICIAL ---
 if "lat_actual" not in st.session_state:
     st.session_state.lat_actual = 37.3890
 if "lon_actual" not in st.session_state:
@@ -216,16 +199,9 @@ def actualizar_desde_coords(nueva_lat, nueva_lon):
         )
 
 
-# --- PANEL LATERAL (PARA PANTALLAS DE PORTÁTIL / ESCRITORIO) ---
+# --- PANEL LATERAL (PORTÁTIL / ESCRITORIO) ---
 st.sidebar.header("🛰️ PANEL DE CONTROL")
-ciudad_side = st.sidebar.text_input(
-    "1. Buscar por Ciudad / Región:",
-    value=st.session_state.ultima_ciudad_buscada,
-    key="ciudad_sidebar",
-)
-actualizar_desde_ciudad(ciudad_side)
-
-st.sidebar.markdown("**2. O ajustar Coordenadas (Lat / Lon):**")
+st.sidebar.markdown("**Ajustar Coordenadas (Lat / Lon):**")
 lat_side = st.sidebar.number_input(
     "Latitud (°)",
     value=float(st.session_state.lat_actual),
@@ -246,7 +222,7 @@ LAT = st.session_state.lat_actual
 LON = st.session_state.lon_actual
 nombre_lugar = st.session_state.lugar_actual
 
-# --- DESCARGA Y CACHÉ DE VARIABLES NASA POWER ---
+# --- TELEMETRÍA NASA POWER ---
 PARAMETROS = ["ALLSKY_SFC_SW_DWN", "WS10M", "T2M", "PRECTOTCORR"]
 ARCHIVO_LOCAL = f"jouledetective_nasa_{LAT}_{LON}.csv"
 
@@ -313,11 +289,6 @@ if offline_side != st.session_state.modo_offline_global:
     st.session_state.modo_offline_global = offline_side
     st.rerun()
 
-if st.session_state.modo_offline_global:
-    st.sidebar.warning(
-        "⚠️ **Aviso de Mapa Offline:** La cartografía en línea queda limitada, pero los cálculos predictivos y gráficos siguen operando en local."
-    )
-
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "**🔓 SOFTWARE OPEN SOURCE**\n\n"
@@ -325,7 +296,6 @@ st.sidebar.markdown(
 )
 
 
-# --- CÁLCULO ESTADÍSTICO Y PROYECCIÓN 2030 ---
 def calcular_estadisticas(df, param):
     sub = df[(df["PARAMETER"] == param) & (df["ANN"] > -900)].sort_values(
         "YEAR"
@@ -379,66 +349,43 @@ header_html = (
 st.markdown(header_html, unsafe_allow_html=True)
 
 # ==============================================================================
-# BARRA DE CONTROL RÁPIDO EN PANTALLA (SOLO VISIBLE EN MÓVILES ANDROID / iOS)
+# BARRA DE BÚSQUEDA SIEMPRE VISIBLE (MÓVIL Y PORTÁTIL)
 # ==============================================================================
-with st.expander(
-    f"🎛️ PANEL DE CONTROL RÁPIDO (Buscar Ciudad, Coordenadas, CSV y Modo Offline) — 📍 {nombre_lugar}",
-    expanded=False,
-):
-    c_mob1, c_mob2, c_mob3 = st.columns([1.4, 1, 1])
-    with c_mob1:
-        ciudad_main = st.text_input(
-            "1. Buscar por Ciudad / Región:",
-            value=st.session_state.ultima_ciudad_buscada,
-            key="ciudad_main",
-        )
-        if ciudad_main != st.session_state.ultima_ciudad_buscada:
-            actualizar_desde_ciudad(ciudad_main)
-            st.rerun()
-    with c_mob2:
-        lat_main = st.number_input(
-            "Latitud (°)",
-            value=float(st.session_state.lat_actual),
-            format="%.4f",
-            step=0.05,
-            key="lat_main",
-        )
-    with c_mob3:
-        lon_main = st.number_input(
-            "Longitud (°)",
-            value=float(st.session_state.lon_actual),
-            format="%.4f",
-            step=0.05,
-            key="lon_main",
-        )
-    if (
-        round(lat_main, 4) != round(st.session_state.lat_actual, 4)
-        or round(lon_main, 4) != round(st.session_state.lon_actual, 4)
-    ):
-        actualizar_desde_coords(lat_main, lon_main)
+col_busq, col_csv_top, col_off_top = st.columns([2.2, 1.1, 1])
+
+with col_busq:
+    ciudad_top = st.text_input(
+        "🔍 Buscar por Ciudad / Región (escribe y pulsa Enter para actualizar):",
+        value=st.session_state.ultima_ciudad_buscada,
+        key="ciudad_siempre_visible",
+    )
+    if ciudad_top != st.session_state.ultima_ciudad_buscada:
+        actualizar_desde_ciudad(ciudad_top)
         st.rerun()
 
-    c_act1, c_act2 = st.columns(2)
-    with c_act1:
-        st.download_button(
-            label="📥 Descargar Base de Datos NASA (.CSV)",
-            data=df_nasa.to_csv(index=False).encode("utf-8"),
-            file_name=f"NASA_POWER_{LAT}_{LON}.csv",
-            mime="text/csv",
-            key="dl_main",
-        )
-    with c_act2:
-        offline_main = st.checkbox(
-            "🔌 Activar Modo Sin Conexión (ON / OFF)",
-            value=st.session_state.modo_offline_global,
-            key="offline_main",
-        )
-        if offline_main != st.session_state.modo_offline_global:
-            st.session_state.modo_offline_global = offline_main
-            st.rerun()
+with col_csv_top:
+    st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+    st.download_button(
+        label="📥 Datos NASA (.CSV)",
+        data=df_nasa.to_csv(index=False).encode("utf-8"),
+        file_name=f"NASA_POWER_{LAT}_{LON}.csv",
+        mime="text/csv",
+        key="dl_top",
+    )
+
+with col_off_top:
+    st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
+    offline_top = st.checkbox(
+        "🔌 Modo Offline",
+        value=st.session_state.modo_offline_global,
+        key="offline_top",
+    )
+    if offline_top != st.session_state.modo_offline_global:
+        st.session_state.modo_offline_global = offline_top
+        st.rerun()
 
 # ==============================================================================
-# PUNTO 1: INDICADORES SATELITALES NASA POWER (DATOS DINÁMICOS PRIMERO)
+# PUNTO 1: INDICADORES SATELITALES NASA POWER
 # ==============================================================================
 st.subheader(f"1. Indicadores Satelitales NASA POWER en 📍 {nombre_lugar}")
 st.caption(f"Fuente activa: {fuente_datos}")
