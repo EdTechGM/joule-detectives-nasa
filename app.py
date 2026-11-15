@@ -26,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- CSS TEMA OSCURO ESPACIAL ---
+# --- CSS TEMA OSCURO ESPACIAL CON CONTRASTE TOTAL CORREGIDO ---
 st.markdown(
     """
 <style>
@@ -37,13 +37,24 @@ st.markdown(
         color: #F8FAFC !important;
         font-family: 'Inter', sans-serif;
     }
-    .stApp h1, .stApp h2, .stApp h3 {
+    .stApp h1, .stApp h2, .stApp h3, [data-testid="stHeading"] * {
         color: #38BDF8 !important;
         font-weight: 800 !important;
     }
-    .stApp p, .stApp label, .stApp span {
-        color: #F8FAFC !important;
+    .stApp p, .stApp label, .stApp span, .stCaption, [data-testid="stCaptionContainer"] * {
+        color: #E2E8F0 !important;
     }
+    /* Caja de coordenadas listas para copiar y pegar (antes blanca sobre blanco) */
+    [data-testid="stCode"], pre, code {
+        background-color: #1E293B !important;
+        color: #FACC15 !important;
+        border: 1px solid #38BDF8 !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stCode"] * {
+        color: #FACC15 !important;
+    }
+    /* Barra lateral */
     section[data-testid="stSidebar"] {
         background-color: #111827 !important;
         border-right: 2px solid #1E3A8A !important;
@@ -56,6 +67,12 @@ st.markdown(
         color: #FACC15 !important;
         border: 1px solid #38BDF8 !important;
         font-weight: 700 !important;
+    }
+    /* Botones + y - de los campos numéricos laterales */
+    section[data-testid="stSidebar"] button[kind="secondary"] {
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+        border: 1px solid #38BDF8 !important;
     }
     .stDownloadButton > button {
         width: 100% !important;
