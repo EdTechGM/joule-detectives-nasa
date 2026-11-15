@@ -23,10 +23,10 @@ st.set_page_config(
     page_title="TEAM Joule Detectives | NASA Space Apps",
     page_icon=ICONO_NASA_SVG_URI,
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
-# --- CSS TEMA OSCURO + BUSCADOR SIEMPRE VISIBLE + OPTIMIZACIÓN MÓVIL ---
+# --- CSS TEMA OSCURO ESPACIAL ---
 st.markdown(
     """
 <style>
@@ -51,12 +51,11 @@ st.markdown(
     section[data-testid="stSidebar"] * {
         color: #F8FAFC !important;
     }
-    input[type="text"], input[type="number"] {
+    section[data-testid="stSidebar"] input {
         background-color: #1F2937 !important;
         color: #FACC15 !important;
-        border: 2px solid #38BDF8 !important;
+        border: 1px solid #38BDF8 !important;
         font-weight: 700 !important;
-        font-size: 16px !important;
     }
     .stDownloadButton > button {
         width: 100% !important;
@@ -68,21 +67,14 @@ st.markdown(
     .stDownloadButton > button p {
         color: #FFFFFF !important;
     }
-    /* En móviles (<768px) oculta el sidebar lateral para evitar bloqueos de pantalla */
-    @media (max-width: 768px) {
-        section[data-testid="stSidebar"],
-        [data-testid="collapsedControl"] {
-            display: none !important;
-        }
-    }
     .nasa-topbar {
         background-color: #000000;
-        padding: 14px 20px;
+        padding: 14px 24px;
         border-radius: 6px 6px 0 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         border-bottom: 3px solid #FC3D21;
     }
     .nasa-topbar-center {
@@ -91,14 +83,14 @@ st.markdown(
     }
     .nasa-team-title {
         font-family: 'Orbitron', sans-serif;
-        font-size: clamp(18px, 4vw, 26px);
+        font-size: 26px;
         font-weight: 900;
-        letter-spacing: 1.4px;
+        letter-spacing: 1.6px;
         color: #FFFFFF !important;
     }
     .nasa-team-subtitle {
         font-family: 'Space Mono', monospace;
-        font-size: clamp(11px, 2.5vw, 13px);
+        font-size: 13px;
         color: #93C5FD !important;
         margin-top: 4px;
     }
@@ -109,7 +101,7 @@ st.markdown(
         padding: 14px 18px;
         border-radius: 0 0 6px 6px;
         color: #E2E8F0 !important;
-        margin-bottom: 14px;
+        margin-bottom: 18px;
     }
     .dinamico-card {
         background-color: #161B22;
@@ -126,13 +118,44 @@ st.markdown(
         font-weight: 900;
         font-family: 'Space Mono', monospace;
     }
+    .sig-badge-yes {
+        display: inline-block;
+        background-color: #065F46;
+        color: #A7F3D0 !important;
+        border: 1px solid #10B981;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 6px;
+    }
+    .sig-badge-no {
+        display: inline-block;
+        background-color: #1E293B;
+        color: #CBD5E1 !important;
+        border: 1px solid #64748B;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 6px;
+    }
+    .conclusion-box {
+        background-color: #0F172A;
+        border: 2px solid #10B981;
+        border-left: 8px solid #10B981;
+        padding: 18px 22px;
+        border-radius: 8px;
+        color: #F8FAFC !important;
+        margin-top: 12px;
+    }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
 LOGO_NASA_SVG = (
-    '<svg width="48" height="48" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
+    '<svg width="56" height="56" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
     '<circle cx="50" cy="50" r="46" fill="#0B3D91" stroke="#FFFFFF" stroke-width="3"/>'
     '<circle cx="26" cy="28" r="2.5" fill="#FFFFFF"/><circle cx="74" cy="25" r="2" fill="#FFFFFF"/>'
     '<circle cx="72" cy="72" r="2.5" fill="#FFFFFF"/><circle cx="30" cy="70" r="1.8" fill="#FFFFFF"/>'
@@ -163,7 +186,7 @@ def geocodificar(nombre, offline):
     return 37.3890, -5.9840, "Sevilla, España"
 
 
-# --- ESTADO INICIAL ---
+# --- ESTADO SINCRONIZADO SIN BUCLES ---
 if "lat_actual" not in st.session_state:
     st.session_state.lat_actual = 37.3890
 if "lon_actual" not in st.session_state:
@@ -172,51 +195,49 @@ if "lugar_actual" not in st.session_state:
     st.session_state.lugar_actual = "Sevilla, España"
 if "ultima_ciudad_buscada" not in st.session_state:
     st.session_state.ultima_ciudad_buscada = "Sevilla, España"
-if "modo_offline_global" not in st.session_state:
-    st.session_state.modo_offline_global = False
+if "ultimo_clic_mapa" not in st.session_state:
+    st.session_state.ultimo_clic_mapa = None
 
-
-def actualizar_desde_ciudad(nueva_ciudad):
-    if nueva_ciudad and nueva_ciudad != st.session_state.ultima_ciudad_buscada:
-        lat_g, lon_g, nom_g = geocodificar(
-            nueva_ciudad, st.session_state.modo_offline_global
-        )
-        st.session_state.lat_actual = lat_g
-        st.session_state.lon_actual = lon_g
-        st.session_state.lugar_actual = nom_g
-        st.session_state.ultima_ciudad_buscada = nueva_ciudad
-
-
-def actualizar_desde_coords(nueva_lat, nueva_lon):
-    if (
-        round(nueva_lat, 4) != round(st.session_state.lat_actual, 4)
-        or round(nueva_lon, 4) != round(st.session_state.lon_actual, 4)
-    ):
-        st.session_state.lat_actual = round(nueva_lat, 4)
-        st.session_state.lon_actual = round(nueva_lon, 4)
-        st.session_state.lugar_actual = (
-            f"Coordenada ({st.session_state.lat_actual}°, {st.session_state.lon_actual}°)"
-        )
-
-
-# --- PANEL LATERAL (PORTÁTIL / ESCRITORIO) ---
+# --- PANEL LATERAL ---
 st.sidebar.header("🛰️ PANEL DE CONTROL")
-st.sidebar.markdown("**Ajustar Coordenadas (Lat / Lon):**")
-lat_side = st.sidebar.number_input(
+offline_previo = st.session_state.get("modo_offline_chk", False)
+
+ciudad_input = st.sidebar.text_input(
+    "1. Buscar por Ciudad / Región:",
+    value=st.session_state.ultima_ciudad_buscada,
+)
+
+if ciudad_input != st.session_state.ultima_ciudad_buscada:
+    lat_g, lon_g, nom_g = geocodificar(ciudad_input, offline_previo)
+    st.session_state.lat_actual = lat_g
+    st.session_state.lon_actual = lon_g
+    st.session_state.lugar_actual = nom_g
+    st.session_state.ultima_ciudad_buscada = ciudad_input
+    st.session_state.ultimo_clic_mapa = None
+
+st.sidebar.markdown("**2. O ajustar Coordenadas (Lat / Lon):**")
+lat_manual = st.sidebar.number_input(
     "Latitud (°)",
     value=float(st.session_state.lat_actual),
     format="%.4f",
     step=0.05,
-    key="lat_sidebar",
 )
-lon_side = st.sidebar.number_input(
+lon_manual = st.sidebar.number_input(
     "Longitud (°)",
     value=float(st.session_state.lon_actual),
     format="%.4f",
     step=0.05,
-    key="lon_sidebar",
 )
-actualizar_desde_coords(lat_side, lon_side)
+
+if (
+    round(lat_manual, 4) != round(st.session_state.lat_actual, 4)
+    or round(lon_manual, 4) != round(st.session_state.lon_actual, 4)
+):
+    st.session_state.lat_actual = round(lat_manual, 4)
+    st.session_state.lon_actual = round(lon_manual, 4)
+    st.session_state.lugar_actual = (
+        f"Coordenada ({st.session_state.lat_actual}°, {st.session_state.lon_actual}°)"
+    )
 
 LAT = st.session_state.lat_actual
 LON = st.session_state.lon_actual
@@ -268,7 +289,7 @@ def obtener_telemetria_nasa(lat, lon, offline, archivo):
 
 
 df_nasa, fuente_datos = obtener_telemetria_nasa(
-    LAT, LON, st.session_state.modo_offline_global, ARCHIVO_LOCAL
+    LAT, LON, offline_previo, ARCHIVO_LOCAL
 )
 
 st.sidebar.markdown("---")
@@ -277,17 +298,18 @@ st.sidebar.download_button(
     data=df_nasa.to_csv(index=False).encode("utf-8"),
     file_name=f"NASA_POWER_{LAT}_{LON}.csv",
     mime="text/csv",
-    key="dl_sidebar",
 )
 
-offline_side = st.sidebar.checkbox(
+modo_offline = st.sidebar.checkbox(
     "🔌 Activar Modo Sin Conexión (ON / OFF)",
-    value=st.session_state.modo_offline_global,
-    key="offline_sidebar",
+    value=False,
+    key="modo_offline_chk",
 )
-if offline_side != st.session_state.modo_offline_global:
-    st.session_state.modo_offline_global = offline_side
-    st.rerun()
+
+if modo_offline:
+    st.sidebar.warning(
+        "⚠️ **Aviso de Mapa Offline:** La cartografía en línea queda limitada, pero los cálculos estadísticos y gráficos siguen operando en local."
+    )
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(
@@ -296,6 +318,7 @@ st.sidebar.markdown(
 )
 
 
+# --- CÁLCULO ESTADÍSTICO CON SIGNIFICANCIA (P-VALUE SCIPY) ---
 def calcular_estadisticas(df, param):
     sub = df[(df["PARAMETER"] == param) & (df["ANN"] > -900)].sort_values(
         "YEAR"
@@ -309,26 +332,32 @@ def calcular_estadisticas(df, param):
     return x, y, media_actual, proyeccion_2030, cambio_decada, float(p_val)
 
 
-x_sol, y_sol, sol_act, sol_2030, sol_dec, _ = calcular_estadisticas(
+x_sol, y_sol, sol_act, sol_2030, sol_dec, sol_p = calcular_estadisticas(
     df_nasa, "ALLSKY_SFC_SW_DWN"
 )
-x_win, y_win, win_act, win_2030, win_dec, _ = calcular_estadisticas(
+x_win, y_win, win_act, win_2030, win_dec, win_p = calcular_estadisticas(
     df_nasa, "WS10M"
 )
-x_tmp, y_tmp, tmp_act, tmp_2030, tmp_dec, _ = calcular_estadisticas(
+x_tmp, y_tmp, tmp_act, tmp_2030, tmp_dec, tmp_p = calcular_estadisticas(
     df_nasa, "T2M"
 )
-x_prc, y_prc, prc_act, prc_2030, prc_dec, _ = calcular_estadisticas(
+x_prc, y_prc, prc_act, prc_2030, prc_dec, prc_p = calcular_estadisticas(
     df_nasa, "PRECTOTCORR"
 )
+
+
+def etiqueta_significancia(p_val):
+    if p_val < 0.05:
+        return f'<span class="sig-badge-yes">✓ Tendencia Significativa (p = {p_val:.3f} &lt; 0.05)</span>'
+    return f'<span class="sig-badge-no">• Variabilidad Estable (p = {p_val:.3f} ≥ 0.05)</span>'
+
 
 # ==============================================================================
 # ENCABEZADO VISUAL
 # ==============================================================================
-if st.session_state.modo_offline_global:
+if modo_offline:
     st.warning(
-        "⚠️ **MODO SIN CONEXIÓN ACTIVADO:** Operando 100% en local con telemetría NASA en caché. "
-        "**Nota:** El mapa interactivo requiere conexión a internet para descargar teselas cartográficas."
+        "⚠️ **MODO SIN CONEXIÓN ACTIVADO:** Operando 100% en local con telemetría NASA en caché."
     )
 
 header_html = (
@@ -336,56 +365,20 @@ header_html = (
     f"<div>{LOGO_NASA_SVG}</div>"
     f'<div class="nasa-topbar-center">'
     f'<div class="nasa-team-title">TEAM Joule Detectives</div>'
-    f'<div class="nasa-team-subtitle">NASA Space Apps Challenge • Open Source Earth Climate & Energy Resilience</div>'
+    f'<div class="nasa-team-subtitle">NASA Space Apps Challenge • Be An Earth System Trend Detective!</div>'
     f"</div>"
     f"<div>{LOGO_NASA_SVG}</div>"
     f"</div>"
     f'<div class="objetivo-box">'
     f"<b>🎯 Objetivo del Proyecto:</b> Procesamiento en <b>Python</b> de datos abiertos <b>NASA POWER (2015–2025)</b> "
-    f"para visualizar tendencias climáticas, proyectar escenarios al <b>2030</b> y optimizar la resiliencia energética ante "
+    f"para detectar tendencias estadísticamente significativas, proyectar escenarios orientativos al <b>2030</b> y optimizar la resiliencia energética ante "
     f"posibles desconexiones del suministro eléctrico."
     f"</div>"
 )
 st.markdown(header_html, unsafe_allow_html=True)
 
 # ==============================================================================
-# BARRA DE BÚSQUEDA SIEMPRE VISIBLE (MÓVIL Y PORTÁTIL)
-# ==============================================================================
-col_busq, col_csv_top, col_off_top = st.columns([2.2, 1.1, 1])
-
-with col_busq:
-    ciudad_top = st.text_input(
-        "🔍 Buscar por Ciudad / Región (escribe y pulsa Enter para actualizar):",
-        value=st.session_state.ultima_ciudad_buscada,
-        key="ciudad_siempre_visible",
-    )
-    if ciudad_top != st.session_state.ultima_ciudad_buscada:
-        actualizar_desde_ciudad(ciudad_top)
-        st.rerun()
-
-with col_csv_top:
-    st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-    st.download_button(
-        label="📥 Datos NASA (.CSV)",
-        data=df_nasa.to_csv(index=False).encode("utf-8"),
-        file_name=f"NASA_POWER_{LAT}_{LON}.csv",
-        mime="text/csv",
-        key="dl_top",
-    )
-
-with col_off_top:
-    st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
-    offline_top = st.checkbox(
-        "🔌 Modo Offline",
-        value=st.session_state.modo_offline_global,
-        key="offline_top",
-    )
-    if offline_top != st.session_state.modo_offline_global:
-        st.session_state.modo_offline_global = offline_top
-        st.rerun()
-
-# ==============================================================================
-# PUNTO 1: INDICADORES SATELITALES NASA POWER
+# PUNTO 1: INDICADORES SATELITALES NASA POWER + SIGNIFICANCIA ESTADÍSTICA
 # ==============================================================================
 st.subheader(f"1. Indicadores Satelitales NASA POWER en 📍 {nombre_lugar}")
 st.caption(f"Fuente activa: {fuente_datos}")
@@ -396,7 +389,8 @@ with k1:
         f'<div class="dinamico-card">'
         f"<div>☀️ <b>Radiación Solar ({nombre_lugar})</b></div>"
         f'<div class="dinamico-valor">{sol_act:.2f} kWh/m²/d</div>'
-        f"<small>Tendencia: {sol_dec:+.2f}/década • Proyección 2030: <b>{sol_2030:.2f}</b></small>"
+        f"<small>Tendencia: {sol_dec:+.2f}/década • Proyección lineal 2030: <b>{sol_2030:.2f}</b></small><br>"
+        f"{etiqueta_significancia(sol_p)}"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -405,7 +399,8 @@ with k2:
         f'<div class="dinamico-card">'
         f"<div>💨 <b>Velocidad del Viento ({nombre_lugar})</b></div>"
         f'<div class="dinamico-valor">{win_act:.2f} m/s</div>'
-        f"<small>Tendencia: {win_dec:+.2f}/década • Proyección 2030: <b>{win_2030:.2f}</b></small>"
+        f"<small>Tendencia: {win_dec:+.2f}/década • Proyección lineal 2030: <b>{win_2030:.2f}</b></small><br>"
+        f"{etiqueta_significancia(win_p)}"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -414,7 +409,8 @@ with k3:
         f'<div class="dinamico-card">'
         f"<div>🌡️ <b>Temperatura 2m ({nombre_lugar})</b></div>"
         f'<div class="dinamico-valor">{tmp_act:.1f} °C</div>'
-        f"<small>Tendencia: {tmp_dec:+.2f} °C/década • Proyección 2030: <b>{tmp_2030:.1f} °C</b></small>"
+        f"<small>Tendencia: {tmp_dec:+.2f} °C/década • Proyección lineal 2030: <b>{tmp_2030:.1f} °C</b></small><br>"
+        f"{etiqueta_significancia(tmp_p)}"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -422,11 +418,11 @@ with k3:
 st.markdown("---")
 
 # ==============================================================================
-# PUNTO 2: MAPA INTERACTIVO A COLOR (FOLIUM) + COORDENADAS COPIABLES
+# PUNTO 2: MAPA INTERACTIVO A COLOR (SIN BUCLE DE ACTUALIZACIÓN)
 # ==============================================================================
 st.subheader(f"2. Selección Geográfica en Mapa Interactivo — 📍 {nombre_lugar}")
 st.caption(
-    "Toca o haz clic en cualquier punto del mapa a color para capturar las coordenadas y actualizar automáticamente los satélites de la NASA."
+    "Haz clic en cualquier punto del mapa a color para capturar las coordenadas y actualizar automáticamente los satélites de la NASA."
 )
 
 col_mapa, col_coords = st.columns([1.6, 1])
@@ -440,12 +436,17 @@ with col_mapa:
         icon=folium.Icon(color="red", icon="info-sign"),
     ).add_to(m)
 
-    map_data = st_folium(m, height=340, use_container_width=True)
+    map_data = st_folium(m, height=340, width=700, key="mapa_nasa_interactivo")
 
     if map_data and map_data.get("last_clicked"):
         click_lat = round(float(map_data["last_clicked"]["lat"]), 4)
         click_lon = round(float(map_data["last_clicked"]["lng"]), 4)
-        if click_lat != LAT or click_lon != LON:
+        nuevo_clic = (click_lat, click_lon)
+        if (
+            nuevo_clic != st.session_state.ultimo_clic_mapa
+            and (click_lat != LAT or click_lon != LON)
+        ):
+            st.session_state.ultimo_clic_mapa = nuevo_clic
             st.session_state.lat_actual = click_lat
             st.session_state.lon_actual = click_lon
             st.session_state.lugar_actual = (
@@ -458,7 +459,8 @@ with col_coords:
         f'<div class="dinamico-card">'
         f"<div>📍 <b>UBICACIÓN ACTIVA</b></div>"
         f'<div class="dinamico-valor">{nombre_lugar.upper()}</div>'
-        f"<small>Precipitación media actual: <b>{prc_act:.2f} mm/día</b> (Proyección 2030: {prc_2030:.2f} mm/día)</small>"
+        f"<small>Precipitación media actual: <b>{prc_act:.2f} mm/día</b> (Proy. lineal 2030: {prc_2030:.2f} mm/día)</small><br>"
+        f"{etiqueta_significancia(prc_p)}"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -470,14 +472,17 @@ st.markdown("---")
 # ==============================================================================
 # SECCIÓN DE ESTUDIO CLIMÁTICO PREDICTIVO AL 2030 (PUNTOS 3 Y 4)
 # ==============================================================================
-st.header(f"📈 Estudio Climático Predictivo al 2030 — 📍 {nombre_lugar}")
+st.header(f"📈 Estudio Climático y Tendencias (2015–2030) — 📍 {nombre_lugar}")
+st.caption(
+    "ℹ️ Nota metodológica: Las estimaciones a 2030 corresponden a una extrapolación lineal sobre 11 años de observaciones NASA POWER (2015–2025), orientativa para planificación energética."
+)
 
-# --- PUNTO 3: GRÁFICO 2D DE TEMPERATURA Y CANTIDAD DE LLUVIA ---
-st.subheader("3. Evolución 2D y Proyección 2030: Temperatura (°C) y Precipitación (mm/día)")
+# --- PUNTO 3: GRÁFICO 2D ---
+st.subheader("3. Evolución 2D y Extrapolación 2030: Temperatura (°C) y Precipitación (mm/día)")
 
 fig_2d = make_subplots(specs=[[{"secondary_y": True}]])
 
-años_2d = [str(int(yr)) for yr in x_prc] + ["2030 (Proy.)"]
+años_2d = [str(int(yr)) for yr in x_prc] + ["2030 (Est.)"]
 lluvia_2d = y_prc.tolist() + [round(prc_2030, 2)]
 temp_2d = y_tmp.tolist() + [round(tmp_2030, 1)]
 
@@ -521,24 +526,30 @@ fig_2d.update_yaxes(title_text="Temperatura (°C)", secondary_y=True)
 
 st.plotly_chart(fig_2d, use_container_width=True)
 
-# --- PUNTO 4: GRÁFICO 3D DE RADIACIÓN SOLAR Y VIENTO ---
-st.subheader("4. Trayectoria 3D y Proyección 2030: Radiación Solar y Velocidad del Viento")
+# --- PUNTO 4: GRÁFICO 3D NORMALIZADO (BASE 100 = 2015) PARA COMPARACIÓN CLARA ---
+st.subheader("4. Comparativa 3D Normalizada (Base 100 = Año 2015): Evolución Relativa Solar vs. Eólica")
+st.caption(
+    "Ambos recursos se escalan tomando 2015 como 100% para comparar directamente su variación relativa sin mezclar unidades distintas (pasa el cursor para ver el valor real)."
+)
 
 años_3d = [str(int(yr)) for yr in x_sol] + ["2030"]
-sol_3d_vals = y_sol.tolist() + [round(sol_2030, 2)]
-win_3d_vals = y_win.tolist() + [round(win_2030, 2)]
+sol_reales = y_sol.tolist() + [round(sol_2030, 2)]
+win_reales = y_win.tolist() + [round(win_2030, 2)]
+
+sol_norm = [round((v / sol_reales[0]) * 100, 1) for v in sol_reales]
+win_norm = [round((v / win_reales[0]) * 100, 1) for v in win_reales]
 
 fig_3d = go.Figure()
 
 fig_3d.add_trace(
     go.Scatter3d(
         x=años_3d,
-        y=["☀️ Solar (kWh/m²)"] * len(años_3d),
-        z=sol_3d_vals,
-        name="☀️ Radiación Solar (kWh/m²/día)",
-        mode="lines+markers+text",
-        text=[f"{v:.2f}" for v in sol_3d_vals],
-        textposition="top center",
+        y=["☀️ Solar (% vs 2015)"] * len(años_3d),
+        z=sol_norm,
+        name="☀️ Radiación Solar (Índice Base 100)",
+        mode="lines+markers",
+        customdata=sol_reales,
+        hovertemplate="Año: %{x}<br>Índice: %{z}%<br>Real: %{customdata} kWh/m²/d<extra></extra>",
         marker=dict(size=7, color="#F97316", symbol="circle"),
         line=dict(color="#F97316", width=6),
     )
@@ -547,12 +558,12 @@ fig_3d.add_trace(
 fig_3d.add_trace(
     go.Scatter3d(
         x=años_3d,
-        y=["💨 Eólica (m/s)"] * len(años_3d),
-        z=win_3d_vals,
-        name="💨 Velocidad del Viento (m/s)",
-        mode="lines+markers+text",
-        text=[f"{v:.2f}" for v in win_3d_vals],
-        textposition="top center",
+        y=["💨 Eólica (% vs 2015)"] * len(años_3d),
+        z=win_norm,
+        name="💨 Velocidad del Viento (Índice Base 100)",
+        mode="lines+markers",
+        customdata=win_reales,
+        hovertemplate="Año: %{x}<br>Índice: %{z}%<br>Real: %{customdata} m/s<extra></extra>",
         marker=dict(size=7, color="#38BDF8", symbol="diamond"),
         line=dict(color="#38BDF8", width=6),
     )
@@ -568,10 +579,55 @@ fig_3d.update_layout(
     scene=dict(
         xaxis=dict(title="Año (2015–2030)", backgroundcolor="#111827"),
         yaxis=dict(title="Recurso", backgroundcolor="#111827"),
-        zaxis=dict(title="Magnitud", backgroundcolor="#111827"),
+        zaxis=dict(title="Índice Relativo (2015 = 100%)", backgroundcolor="#111827"),
     ),
     margin=dict(l=0, r=0, b=0, t=30),
     height=400,
 )
 
 st.plotly_chart(fig_3d, use_container_width=True)
+
+st.markdown("---")
+
+# ==============================================================================
+# PUNTO 5: CONCLUSIONES CIENTÍFICAS E INTERPRETACIÓN AUTOMÁTICA
+# ==============================================================================
+st.header(f"5. Conclusiones Científicas e Interpretación — 📍 {nombre_lugar}")
+
+vars_sig = []
+if sol_p < 0.05:
+    vars_sig.append(f"Radiación Solar ({sol_dec:+.2f} kWh/m²/d por década, p={sol_p:.3f})")
+if win_p < 0.05:
+    vars_sig.append(f"Velocidad del Viento ({win_dec:+.2f} m/s por década, p={win_p:.3f})")
+if tmp_p < 0.05:
+    vars_sig.append(f"Temperatura 2m ({tmp_dec:+.2f} °C por década, p={tmp_p:.3f})")
+if prc_p < 0.05:
+    vars_sig.append(f"Precipitación ({prc_dec:+.2f} mm/día por década, p={prc_p:.3f})")
+
+if vars_sig:
+    resumen_sig = (
+        f"En <b>{nombre_lugar}</b> se detectan tendencias <b>estadísticamente significativas (p &lt; 0.05)</b> en: "
+        + ", ".join(vars_sig)
+        + "."
+    )
+else:
+    resumen_sig = (
+        f"En <b>{nombre_lugar}</b> ninguna de las 4 variables supera el umbral de significancia estadística (<b>p &lt; 0.05</b>) en el periodo 2015–2025, "
+        "lo que indica un régimen climático interanual estable."
+    )
+
+recurso_dominante = (
+    "Energía Solar Fotovoltaica"
+    if (sol_act / 5.0) >= (win_act / 4.0)
+    else "Energía Eólica"
+)
+
+st.markdown(
+    f'<div class="conclusion-box">'
+    f"<div><b>🔬 Diagnóstico del Detective de Tendencias:</b> {resumen_sig}</div>"
+    f"<div style='margin-top:8px;'><b>⚡ Recomendación Energética Local:</b> Con una irradiancia media reciente de <b>{sol_act:.2f} kWh/m²/día</b> "
+    f"y viento medio de <b>{win_act:.2f} m/s</b>, la fuente primaria recomendada para autonomía eléctrica en <b>{nombre_lugar}</b> es la <b>{recurso_dominante}</b>.</div>"
+    f"<div style='margin-top:8px; font-size:13px; color:#CBD5E1;'><b>⚠️ Limitaciones del modelo:</b> Las cifras proyectadas a 2030 son <i>extrapolaciones lineales simples</i> calculadas sobre 11 años de registros satelitales (2015–2025); sirven para identificar la dirección del cambio, pero no sustituyen modelos climáticos atmosféricos complejos ni garantizan valores exactos a largo plazo.</div>"
+    f"</div>",
+    unsafe_allow_html=True,
+)
